@@ -1,4 +1,4 @@
-# Immi
+<h1><img src="https://github.com/nju33/immi/blob/master/app/icons/icon.iconset/icon_32x32.png?raw=true" height=30>&nbsp;Immi</h1>
 
 > An electron-vue project
 
