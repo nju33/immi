@@ -1,14 +1,12 @@
 <template>
   <div>
-    <div ref="success" class="root success" v-if="isSuccess" @click="handleSuccessClick($electron)">
-      <span v-text="uri" class="message success"></span>
-      <span class="action success">Copied!!</span>
+    <div ref="success" class="root success" v-if="isSuccess" @click="handleClick($electron)">
+      <span class="message success" v-text="successMessage"></span>
     </div>
-    <div class="root error" v-if="isError" @click="handleErrorClick($electron)">
+    <div class="root error" v-if="isError" @click="handleClick($electron)">
       <span v-text="errorMessage" class="message error"></span>
       <span v-if="errorCode" v-text="errorCode" class="action error"></span>
     </div>
-    <!-- <landing-page></landing-page> -->
   </div>
 </template>
 
@@ -26,38 +24,15 @@
     },
     data() {
       return {
-        uri: null,
+        successMessage: null,
         isSuccess: false,
-        // uri: 'http://file.io/akjlD',
-        // isSuccess: true,
         isError: false,
         errorMessage: null,
         errorCode: null
-        // isError: true,
-        // errorMessage: 'adlsfj',
-        // errorCode: 500,
       }
     },
     methods: {
-      handleSuccessClick({ipcRenderer}) {
-        this.$electron.clipboard.writeText(this.$data.uri);
-        if (tcid !== null) {
-          return;
-        }
-        if (tid !== null) {
-          clearTimeout(tid);
-        }
-        this.$refs.success.classList.add('active');
-        tid = setTimeout(() => {
-          this.$refs.success.classList.remove('active');
-          tid = null;
-          tcid = setTimeout(() => {
-            tcid = null;
-            ipcRenderer.send('close-window');
-          }, 1000);
-        }, 2000)
-      },
-      handleErrorClick({ipcRenderer}) {
+      handleClick({ipcRenderer}) {
         ipcRenderer.send('close-window');
       }
     },
@@ -66,7 +41,7 @@
 
       if ('success' in parsedSearch) {
         this.$data.isSuccess = true;
-        this.$data.uri = decodeURIComponent(parsedSearch.uri);
+        this.$data.successMessage = decodeURIComponent(parsedSearch.msg);
       } else if ('error' in parsedSearch) {
         this.$data.isError = true;
         this.$data.errorCode = parsedSearch.code;
@@ -79,7 +54,7 @@
 <style>
   body {
     font-family: Verdana, Geneva, sans-serif;
-    font-size: 14px;
+    font-size: 13px;
   }
 </style>
 
@@ -163,7 +138,7 @@
   }
 
   .message.success {
-    top: -.25em;
+    /*top: -.25em;*/
   }
 
   .action.success {

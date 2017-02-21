@@ -3,8 +3,11 @@
 import fs from 'fs';
 import path from 'path';
 import {app, BrowserWindow, Tray, Menu, ipcMain} from 'electron';
-import got from 'got';
-import FormData from 'form-data';
+import imagemin from 'imagemin';
+import imageminMozjpeg from 'imagemin-mozjpeg';
+import imageminPngquant from 'imagemin-pngquant';
+import del from 'del';
+import ulid from 'ulid';
 
 let mainWindow;
 let tray = null;
@@ -31,6 +34,10 @@ function createWindow(url) {
   return trayWindow;
 }
 
+function isImage(filename) {
+  return /(?:\.svg|\.png|\.jpg|\.jpeg|\.git)$/.test(filename);
+}
+
 function createTray() {
   if (tray !== null) {
     return tray;
@@ -40,45 +47,86 @@ function createTray() {
   tray.setToolTip('Share On');
   tray.setContextMenu(Menu.buildFromTemplate([
     {
+      label: 'Performance',
+      click() {
+        console.log(1);
+      }
+    },
+    {type: 'separator'},
+    {
       label: 'Quit',
       click() {
         app.quit();
       }
     }
   ]))
-  tray.on('drop-files', (e, files) => {
+  tray.on('drop-files', (e, filepaths) => {
+    let error = false;
+
     if (trayWindow !== null) {
       return;
     }
 
-    if (files.length > 1) {
+    if (!filepaths.every(p => isImage(p))) {
       const code = '';
-      const msg = 'Please select only one file';
+      const msg = 'contains files other than [.png, .jpg, .jpeg, .gif, .svg]';
       trayWindow = createWindow(`${winURL}?error&code=${code}&msg=${msg}`);
       return;
     }
 
-    const form = new FormData();
-    form.append('file', fs.createReadStream(files[0]));
-    got.post('https://file.io', {
-      body: form,
-      json: true
-    })
-      .then(res => {
-        if (res.body.success) {
-          const encURI = encodeURIComponent(res.body.link);
-          trayWindow = createWindow(`${winURL}?success&uri=${encURI}`);
-        } else {
+    const dirpath = path.dirname(filepaths[0]);
+    const originalDirpath = path.join(dirpath, 'original');
+
+    try {
+      fs.accessSync(originalDirpath, fs.constants.F_OK);
+    } catch (err) {
+      fs.mkdirSync(originalDirpath);
+    }
+
+    const originalFilepaths = filepaths.map(filepath => {
+      const filename = path.basename(filepath);
+      const originalFilepath = path.join(originalDirpath, filename);
+      fs.createReadStream(filepath)
+        .pipe(fs.createWriteStream(originalFilepath))
+        .on('error', err => {
           const code = '';
-          const msg = 'Unknown error';
+          const msg = err.message;
           trayWindow = createWindow(`${winURL}?error&code=${code}&msg=${msg}`);
+          error = true;
+        });
+      return originalFilepath;
+    });
+
+    if (error) {
+      return;
+    }
+
+    imagemin(originalFilepaths, dirpath, {
+      plugins: [
+        imageminMozjpeg({targa: true}),
+        imageminPngquant({quality: '65-80'})
+      ]
+    })
+    .then(files => {
+      const msg = 'Complate!';
+      trayWindow = createWindow(`${winURL}?success&msg=${msg}`);
+      const _ulid = ulid();
+      trayWindow.ulid = _ulid;
+      setTimeout(() => {
+        if (trayWindow !== null && trayWindow.ulid === _ulid) {
+          trayWindow.destroy();
+          trayWindow = null;
         }
-      })
-      .catch(({statusCode, statusMessage}) => {
-        const code = statusCode;
-        const msg = encodeURIComponent(statusMessage);
-        trayWindow = createWindow(`${winURL}?error&code=${code}&msg=${msg}`);
-      });
+      }, 5000);
+    })
+    .catch(err => {
+      const code = '';
+      const msg = err.message;
+      trayWindow = createWindow(`${winURL}?error&code=${code}&msg=${msg}`);
+      del(path.join(originalDirpath, originalFilepaths.map(f => (
+        path.basename(f)
+      ))), {force: true});
+    });
   });
 }
 
