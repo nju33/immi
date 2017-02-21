@@ -6,6 +6,7 @@ import {app, BrowserWindow, Tray, Menu, ipcMain} from 'electron';
 import imagemin from 'imagemin';
 import imageminMozjpeg from 'imagemin-mozjpeg';
 import imageminPngquant from 'imagemin-pngquant';
+import imageminGifscale from 'imagemin-gifscale';
 import del from 'del';
 import ulid from 'ulid';
 
@@ -104,7 +105,8 @@ function createTray() {
     imagemin(originalFilepaths, dirpath, {
       plugins: [
         imageminMozjpeg({targa: true}),
-        imageminPngquant({quality: '65-80'})
+        imageminPngquant({quality: '65-80'}),
+        imageminGifscale()
       ]
     })
     .then(files => {
