@@ -35,7 +35,7 @@ function createWindow(url) {
 }
 
 function isImage(filename) {
-  return /(?:\.svg|\.png|\.jpg|\.jpeg|\.git)$/.test(filename);
+  return /(?:\.svg|\.png|\.jpg|\.jpeg|\.gif)$/.test(filename);
 }
 
 function createTray() {
