@@ -84,50 +84,56 @@ function createTray() {
       fs.mkdirSync(originalDirpath);
     }
 
-    const originalFilepaths = filepaths.map(filepath => {
-      const filename = path.basename(filepath);
-      const originalFilepath = path.join(originalDirpath, filename);
-      fs.createReadStream(filepath)
-        .pipe(fs.createWriteStream(originalFilepath))
-        .on('error', err => {
-          const code = '';
-          const msg = err.message;
-          trayWindow = createWindow(`${winURL}?error&code=${code}&msg=${msg}`);
-          error = true;
-        });
-      return originalFilepath;
+    const pOriginalFilepaths = filepaths.map(filepath => {
+      return new Promise(resolve => {
+        const filename = path.basename(filepath);
+        const originalFilepath = path.join(originalDirpath, filename);
+        fs.createReadStream(filepath)
+          .pipe(fs.createWriteStream(originalFilepath))
+          .on('error', err => {
+            const code = '';
+            const msg = err.message;
+            trayWindow = createWindow(`${winURL}?error&code=${code}&msg=${msg}`);
+            error = true;
+          })
+          .on('finish', () => {
+            resolve(originalFilepath);
+          });
+      });
     });
 
     if (error) {
       return;
     }
 
-    imagemin(originalFilepaths, dirpath, {
-      plugins: [
-        imageminMozjpeg({targa: true}),
-        imageminPngquant({quality: '65-80'}),
-        imageminGifscale()
-      ]
-    })
-    .then(files => {
-      const msg = 'Complate!';
-      trayWindow = createWindow(`${winURL}?success&msg=${msg}`);
-      const _ulid = ulid();
-      trayWindow.ulid = _ulid;
-      setTimeout(() => {
-        if (trayWindow !== null && trayWindow.ulid === _ulid) {
-          trayWindow.destroy();
-          trayWindow = null;
-        }
-      }, 5000);
-    })
-    .catch(err => {
-      const code = '';
-      const msg = err.message;
-      trayWindow = createWindow(`${winURL}?error&code=${code}&msg=${msg}`);
-      del(path.join(originalDirpath, originalFilepaths.map(f => (
-        path.basename(f)
-      ))), {force: true});
+    Promise.all(pOriginalFilepaths).then(originalFilepaths => {
+      imagemin(originalFilepaths, dirpath, {
+        plugins: [
+          imageminMozjpeg({targa: true}),
+          imageminPngquant({quality: '65-80'}),
+          imageminGifsicle()
+        ]
+      })
+      .then(files => {
+        const msg = 'Complate!';
+        trayWindow = createWindow(`${winURL}?success&msg=${msg}`);
+        const _ulid = ulid();
+        trayWindow.ulid = _ulid;
+        setTimeout(() => {
+          if (trayWindow !== null && trayWindow.ulid === _ulid) {
+            trayWindow.destroy();
+            trayWindow = null;
+          }
+        }, 5000);
+      })
+      .catch(err => {
+        const code = '';
+        const msg = err.message;
+        trayWindow = createWindow(`${winURL}?error&code=${code}&msg=${msg}`);
+        del(path.join(originalDirpath, originalFilepaths.map(f => (
+          path.basename(f)
+        ))), {force: true});
+      });
     });
   });
 }

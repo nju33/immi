@@ -110,7 +110,6 @@
 
   .root.error {
     background: #961f32;
-    color:
   }
 
   .root.error:before {
@@ -139,6 +138,10 @@
 
   .message.success {
     /*top: -.25em;*/
+  }
+
+  .message.error {
+    font-size: 10px;
   }
 
   .action.success {
