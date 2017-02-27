@@ -6,7 +6,7 @@ import {app, BrowserWindow, Tray, Menu, ipcMain} from 'electron';
 import imagemin from 'imagemin';
 import imageminMozjpeg from 'imagemin-mozjpeg';
 import imageminPngquant from 'imagemin-pngquant';
-import imageminGifscale from 'imagemin-gifscale';
+import imageminGifsicle from 'imagemin-gifsicle';
 import del from 'del';
 import ulid from 'ulid';
 
@@ -47,13 +47,13 @@ function createTray() {
   tray = new Tray(path.join(__dirname, 'images/tray.png'));
   tray.setToolTip('Share On');
   tray.setContextMenu(Menu.buildFromTemplate([
-    {
-      label: 'Performance',
-      click() {
-        console.log(1);
-      }
-    },
-    {type: 'separator'},
+    // {
+    //   label: 'Performance',
+    //   click() {
+    //     console.log(1);
+    //   }
+    // },
+    // {type: 'separator'},
     {
       label: 'Quit',
       click() {
