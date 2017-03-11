@@ -134,6 +134,7 @@
     position: relative;
     z-index: 2;
     color: rgba(255,255,255,.89);
+    word-break: break-all;
   }
 
   .message.success {
